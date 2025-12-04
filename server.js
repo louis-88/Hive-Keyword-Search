@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 // Helper to fix __dirname in ES Modules
@@ -44,8 +45,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve static files from the React build directory (dist)
-app.use(express.static(path.join(__dirname, 'dist')));
+// Serve static files from the React build directory (dist) if it exists
+const distPath = path.join(__dirname, 'dist');
+if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+}
 
 // Check connection on startup
 pool.query('SELECT 1', (err, res) => {
@@ -122,10 +126,28 @@ app.post('/search', async (req, res) => {
 // Catch-all route for SPA (React): Serves index.html for any unknown route
 // Updated to use Regex /.*/ for Express 5 compatibility (instead of '*')
 app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    const indexPath = path.join(__dirname, 'dist', 'index.html');
+    
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(404).send(`
+            <div style="font-family: sans-serif; padding: 2rem; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
+                <h1 style="color: #e11d48;">Backend is Running 🚀</h1>
+                <p>However, the <strong>Frontend Build</strong> was not found at:</p>
+                <code style="background: #eee; padding: 4px; border-radius: 4px;">${indexPath}</code>
+                
+                <h3>How to fix this?</h3>
+                <ul>
+                    <li><strong>Developing Locally?</strong> Keep this terminal open and run <code>npm run dev</code> in a <strong>new terminal</strong> to start the React App.</li>
+                    <li><strong>Deploying to Production?</strong> Run <code>npm run build</code> first to generate the <code>dist</code> folder.</li>
+                </ul>
+            </div>
+        `);
+    }
 });
 
 app.listen(PORT, () => {
     console.log(`\n🚀 Backend Server running on port ${PORT}`);
-    console.log(`👉 If running locally: http://localhost:${PORT}`);
+    console.log(`👉 If running locally (API only): http://localhost:${PORT}`);
 });

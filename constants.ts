@@ -1,5 +1,11 @@
 
-export const DEFAULT_ENDPOINT = "/search"; 
+// Automatically detect environment
+const isLocal = typeof window !== 'undefined' && 
+                (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+// Use full URL for local dev (split ports) and relative URL for production (same port)
+export const DEFAULT_ENDPOINT = isLocal ? "http://localhost:3000/search" : "/search";
+
 export const MAX_KEYWORDS = 10;
 export const SEARCH_DAYS = 3;
 
