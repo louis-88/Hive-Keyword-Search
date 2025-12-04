@@ -39,14 +39,14 @@ export const fetchPostsByKeywords = async (
       })
     });
 
-    if (!response.ok) {
-      throw new Error(`Server responded with status: ${response.status}`);
-    }
+    const json: SearchResponse = await response.json().catch(() => ({ 
+        success: false, 
+        data: [], 
+        error: "Failed to parse JSON response from server" 
+    }));
 
-    const json: SearchResponse = await response.json();
-
-    if (!json.success) {
-      throw new Error(json.error || "Unknown server error");
+    if (!response.ok || !json.success) {
+      throw new Error(json.error || `Server responded with status: ${response.status}`);
     }
 
     // Map the body_preview from server to body property for the UI

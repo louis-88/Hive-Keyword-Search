@@ -15,10 +15,8 @@ const dbConfig = {
     password: 'hafsql_public',
     connectionTimeoutMillis: 10000,
     idleTimeoutMillis: 30000,
-    // Enable SSL, which is often required for remote PostgreSQL connections
-    ssl: {
-        rejectUnauthorized: false
-    }
+    // SSL is explicitly disabled as the server does not support it
+    ssl: false
 };
 
 const pool = new Pool(dbConfig);
