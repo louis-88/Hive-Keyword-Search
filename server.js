@@ -76,12 +76,13 @@ app.post('/search', async (req, res) => {
         .join(' OR ');
 
     // Query hafsql.comments
+    // We select the FULL body now so the frontend can extract images correctly.
     const query = `
         SELECT 
             author, 
             permlink, 
             title, 
-            left(body, 500) as body_preview, 
+            body, 
             created, 
             parent_permlink as category
         FROM 
@@ -119,7 +120,8 @@ app.post('/search', async (req, res) => {
 });
 
 // Catch-all route for SPA (React): Serves index.html for any unknown route
-app.get('*', (req, res) => {
+// Updated to use Regex /.*/ for Express 5 compatibility (instead of '*')
+app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
