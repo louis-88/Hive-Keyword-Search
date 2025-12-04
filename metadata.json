@@ -1,0 +1,5 @@
+{
+  "name": "Hive Keyword Tracker",
+  "description": "Search the Hive blockchain for posts containing specific keywords from the last 3 days.",
+  "requestFramePermissions": []
+}
