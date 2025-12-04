@@ -92,8 +92,8 @@ const App: React.FC = () => {
       if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
          setDebugLog(prev => prev + `\n\nCRITICAL CONNECTION ERROR:`);
          setDebugLog(prev => prev + `\n1. Ensure the backend server is running.`);
-         setDebugLog(prev => prev + `\n2. Check if the Middleware URL in settings is correct.`);
-         setDebugLog(prev => prev + `\n3. If local, ensure 'node server.js' is active.`);
+         setDebugLog(prev => prev + `\n2. If running locally with split terminals, change Middleware URL to: http://localhost:3000/search`);
+         setDebugLog(prev => prev + `\n3. If on Render, ensure the deployment is healthy.`);
       }
       
       setStatus(FetchStatus.ERROR);
@@ -175,9 +175,10 @@ const App: React.FC = () => {
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-100 focus:border-red-500"
                     placeholder="e.g. /search"
                   />
-                  <p className="text-xs text-slate-500">
-                    Relative path (e.g., <code>/search</code>) for production, or full URL for local dev.
-                  </p>
+                  <div className="text-xs text-slate-500 space-y-1">
+                    <p>Production (Render): <code>/search</code></p>
+                    <p>Local Dev: <code>http://localhost:3000/search</code></p>
+                  </div>
                 </div>
 
                 {/* Platform Config */}
@@ -236,7 +237,7 @@ const App: React.FC = () => {
                      <p className="mt-2 text-xs bg-white/50 p-2 rounded">
                         <strong>Troubleshooting:</strong><br/>
                         1. Is the backend server running?<br/>
-                        2. If running locally, check <code>node server.js</code> console.
+                        2. If local, try changing Middleware URL to <code>http://localhost:3000/search</code> in settings.
                      </p>
                   )}
                 </div>
