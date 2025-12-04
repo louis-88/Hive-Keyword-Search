@@ -28,3 +28,5 @@ export enum FetchStatus {
   SUCCESS = 'SUCCESS',
   ERROR = 'ERROR',
 }
+
+export type HivePlatform = 'peakd' | 'ecency' | 'hive.blog';

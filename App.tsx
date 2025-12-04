@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-import { Database, Github, Search, AlertTriangle, Terminal, Copy, Check, Settings, X, Save } from 'lucide-react';
-import { ConnectionSettings, FetchStatus, HivePost } from './types';
+import React, { useState, useEffect } from 'react';
+import { Database, Github, Search, AlertTriangle, Terminal, Copy, Check, Settings, X, Save, Layout } from 'lucide-react';
+import { ConnectionSettings, FetchStatus, HivePost, HivePlatform } from './types';
 import { fetchPostsByKeywords } from './services/hafService';
-import { DEFAULT_ENDPOINT, SEARCH_DAYS } from './constants';
+import { DEFAULT_ENDPOINT, SEARCH_DAYS, PLATFORMS } from './constants';
 import KeywordManager from './components/KeywordManager';
 import PostCard from './components/PostCard';
 
 const App: React.FC = () => {
+  // State initialization with localStorage checks
   const [keywords, setKeywords] = useState<string[]>([]);
+  
   const [posts, setPosts] = useState<HivePost[]>([]);
   const [status, setStatus] = useState<FetchStatus>(FetchStatus.IDLE);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -17,12 +19,41 @@ const App: React.FC = () => {
   const [endpointUrl, setEndpointUrl] = useState(DEFAULT_ENDPOINT);
   const [dbUser, setDbUser] = useState('hafsql_public');
   const [dbPass, setDbPass] = useState('hafsql_public');
+  const [platform, setPlatform] = useState<HivePlatform>('peakd');
 
   // Debug states
   const [debugQuery, setDebugQuery] = useState<string>('');
   const [debugLog, setDebugLog] = useState<string>('');
   const [showDebug, setShowDebug] = useState<boolean>(true);
   const [copied, setCopied] = useState<boolean>(false);
+
+  // Load from LocalStorage on Mount
+  useEffect(() => {
+    const savedKeywords = localStorage.getItem('hive_keywords');
+    if (savedKeywords) {
+      try {
+        setKeywords(JSON.parse(savedKeywords));
+      } catch (e) {
+        console.error("Failed to parse saved keywords");
+      }
+    }
+
+    const savedPlatform = localStorage.getItem('hive_platform');
+    if (savedPlatform && Object.keys(PLATFORMS).includes(savedPlatform)) {
+      setPlatform(savedPlatform as HivePlatform);
+    }
+  }, []);
+
+  // Save Keywords to LocalStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('hive_keywords', JSON.stringify(keywords));
+  }, [keywords]);
+
+  // Save Platform to LocalStorage
+  const handlePlatformChange = (newPlatform: HivePlatform) => {
+    setPlatform(newPlatform);
+    localStorage.setItem('hive_platform', newPlatform);
+  };
   
   const handleSearch = async () => {
     if (keywords.length === 0) return;
@@ -118,23 +149,25 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
-        <div className="animate-fadeIn">
+      <main className="flex-grow max-w-6xl w-full mx-auto px-4 py-8 flex flex-col">
+        <div className="animate-fadeIn flex-grow">
           
           {/* Settings Panel */}
           {showSettings && (
             <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 animate-slideDown">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-slate-800 flex items-center">
-                  <Settings size={18} className="mr-2" /> Server Configuration
+                  <Settings size={18} className="mr-2" /> Application Settings
                 </h3>
                 <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600">
                   <X size={20} />
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="col-span-1 md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Middleware URL</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Connection Config */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-slate-700">Middleware URL</label>
                   <input 
                     type="text" 
                     value={endpointUrl}
@@ -142,12 +175,38 @@ const App: React.FC = () => {
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-100 focus:border-red-500"
                     placeholder="e.g. http://localhost:3000/search"
                   />
-                  <p className="text-xs text-slate-500 mt-1">
-                    This is the address of your local <code>node server.js</code> instance.
+                  <p className="text-xs text-slate-500">
+                    Address of your local <code>node server.js</code> instance.
                   </p>
                 </div>
+
+                {/* Platform Config */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-slate-700 flex items-center">
+                    <Layout size={16} className="mr-2" />
+                    Open Links In
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={platform}
+                      onChange={(e) => handlePlatformChange(e.target.value as HivePlatform)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-100 focus:border-red-500 appearance-none bg-white"
+                    >
+                      <option value="peakd">PeakD.com</option>
+                      <option value="ecency">Ecency.com</option>
+                      <option value="hive.blog">Hive.blog</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    </div>
+                  </div>
+                   <p className="text-xs text-slate-500">
+                    Choose your preferred Hive interface for viewing posts.
+                  </p>
+                </div>
+
               </div>
-              <div className="mt-4 flex justify-end">
+              <div className="mt-6 flex justify-end">
                 <button 
                   onClick={() => setShowSettings(false)}
                   className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors flex items-center text-sm font-medium"
@@ -165,9 +224,73 @@ const App: React.FC = () => {
             isLoading={status === FetchStatus.LOADING}
           />
 
-          {/* Debug Console */}
-          {showDebug && (debugQuery || debugLog) && (
-            <div className="mb-8 bg-slate-900 rounded-xl overflow-hidden shadow-lg border border-slate-800">
+          {/* Status & Results */}
+          <div className="space-y-6">
+            {status === FetchStatus.ERROR && (
+              <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-700 text-sm flex items-start">
+                <AlertTriangle size={18} className="mr-2 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold">Connection Error</p>
+                  <p>{errorMsg}</p>
+                  {errorMsg.includes("Failed to fetch") && (
+                     <p className="mt-2 text-xs bg-white/50 p-2 rounded">
+                        <strong>Troubleshooting:</strong><br/>
+                        1. Is <code>node server.js</code> running? (Check Terminal 1)<br/>
+                        2. Is Middleware URL set to <code>http://localhost:3000/search</code>?
+                     </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {status === FetchStatus.SUCCESS && (
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-800">
+                  Search Results <span className="text-slate-400 font-normal">({posts.length})</span>
+                </h3>
+                <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                  Opening in {PLATFORMS[platform].replace('https://', '')}
+                </span>
+              </div>
+            )}
+
+            {/* Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {posts.map((post) => (
+                <PostCard 
+                  key={`${post.author}-${post.permlink}`} 
+                  post={post} 
+                  keywords={keywords}
+                  platformUrl={PLATFORMS[platform]}
+                />
+              ))}
+            </div>
+
+            {/* Empty States */}
+            {status === FetchStatus.SUCCESS && posts.length === 0 && (
+              <div className="text-center py-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                <Search size={48} className="mx-auto text-slate-300 mb-4" />
+                <p className="text-slate-500 font-medium">No posts found matching your keywords in the last {SEARCH_DAYS} days.</p>
+              </div>
+            )}
+
+            {status === FetchStatus.IDLE && (
+              <div className="text-center py-20">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4 text-slate-400">
+                  <Database size={32} />
+                </div>
+                <h3 className="text-lg font-medium text-slate-700 mb-2">Ready to Search</h3>
+                <p className="text-slate-500 max-w-md mx-auto">
+                  Add keywords above to scan the Hive blockchain for relevant posts from the last {SEARCH_DAYS} days.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Debug Console - Moved to Bottom */}
+        {showDebug && (debugQuery || debugLog) && (
+            <div className="mt-12 bg-slate-900 rounded-xl overflow-hidden shadow-lg border border-slate-800">
               <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
                 <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">Debug Information</span>
                 {debugQuery && (
@@ -196,66 +319,6 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
-
-          {/* Status & Results */}
-          <div className="space-y-6">
-            {status === FetchStatus.ERROR && (
-              <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-700 text-sm flex items-start">
-                <AlertTriangle size={18} className="mr-2 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold">Connection Error</p>
-                  <p>{errorMsg}</p>
-                  {errorMsg.includes("Failed to fetch") && (
-                     <p className="mt-2 text-xs bg-white/50 p-2 rounded">
-                        <strong>Troubleshooting:</strong><br/>
-                        1. Is <code>node server.js</code> running? (Check Terminal 1)<br/>
-                        2. Is Middleware URL set to <code>http://localhost:3000/search</code>?
-                     </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {status === FetchStatus.SUCCESS && (
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-800">
-                  Search Results <span className="text-slate-400 font-normal">({posts.length})</span>
-                </h3>
-              </div>
-            )}
-
-            {/* Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {posts.map((post) => (
-                <PostCard 
-                  key={`${post.author}-${post.permlink}`} 
-                  post={post} 
-                  keywords={keywords}
-                />
-              ))}
-            </div>
-
-            {/* Empty States */}
-            {status === FetchStatus.SUCCESS && posts.length === 0 && (
-              <div className="text-center py-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                <Search size={48} className="mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-500 font-medium">No posts found matching your keywords in the last {SEARCH_DAYS} days.</p>
-              </div>
-            )}
-
-            {status === FetchStatus.IDLE && !showDebug && (
-              <div className="text-center py-20">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4 text-slate-400">
-                  <Database size={32} />
-                </div>
-                <h3 className="text-lg font-medium text-slate-700 mb-2">Ready to Search</h3>
-                <p className="text-slate-500 max-w-md mx-auto">
-                  Add keywords above to scan the Hive blockchain for relevant posts from the last {SEARCH_DAYS} days.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
       </main>
     </div>
   );
