@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Github, Search, AlertTriangle, Terminal, Copy, Check, Settings, X, Save, Layout } from 'lucide-react';
+import { Database, Search, AlertTriangle, Terminal, Copy, Check, Settings, X, Save, Layout, Moon, Sun, Heart, Vote } from 'lucide-react';
 import { ConnectionSettings, FetchStatus, HivePost, HivePlatform } from './types';
 import { fetchPostsByKeywords } from './services/hafService';
 import { DEFAULT_ENDPOINT, SEARCH_DAYS, PLATFORMS } from './constants';
@@ -21,6 +21,9 @@ const App: React.FC = () => {
   const [dbPass, setDbPass] = useState('hafsql_public');
   const [platform, setPlatform] = useState<HivePlatform>('peakd');
 
+  // Theme State
+  const [darkMode, setDarkMode] = useState(false);
+
   // Debug states
   const [debugQuery, setDebugQuery] = useState<string>('');
   const [debugLog, setDebugLog] = useState<string>('');
@@ -29,6 +32,7 @@ const App: React.FC = () => {
 
   // Load from LocalStorage on Mount
   useEffect(() => {
+    // Keywords
     const savedKeywords = localStorage.getItem('hive_keywords');
     if (savedKeywords) {
       try {
@@ -38,9 +42,22 @@ const App: React.FC = () => {
       }
     }
 
+    // Platform
     const savedPlatform = localStorage.getItem('hive_platform');
     if (savedPlatform && Object.keys(PLATFORMS).includes(savedPlatform)) {
       setPlatform(savedPlatform as HivePlatform);
+    }
+
+    // Theme
+    const savedTheme = localStorage.getItem('hive_theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+      setDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else {
+      setDarkMode(false);
+      document.documentElement.classList.remove('dark');
     }
   }, []);
 
@@ -48,6 +65,19 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('hive_keywords', JSON.stringify(keywords));
   }, [keywords]);
+
+  // Handle Theme Toggle
+  const toggleTheme = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('hive_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('hive_theme', 'light');
+    }
+  };
 
   // Save Platform to LocalStorage
   const handlePlatformChange = (newPlatform: HivePlatform) => {
@@ -107,23 +137,31 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col transition-colors duration-200">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-red-600/20">
               <Database size={18} />
             </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              Hive<span className="text-red-600">Fetcher</span>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+              Hive<span className="text-red-600">Keyword(s)</span>Fetcher
             </h1>
           </div>
           
           <div className="flex items-center gap-2">
-             <button 
+            <button 
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+
+            <button 
               onClick={() => setShowSettings(!showSettings)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${showSettings ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${showSettings ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`}
               title="Connection Settings"
             >
               <Settings size={18} />
@@ -131,19 +169,11 @@ const App: React.FC = () => {
             </button>
             <button 
               onClick={() => setShowDebug(!showDebug)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${showDebug ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${showDebug ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`}
             >
               <Terminal size={18} />
               <span className="hidden sm:inline">Debug</span>
             </button>
-            <a 
-              href="https://github.com/louis-88/hive-fetcher-hafsql" 
-              target="_blank" 
-              rel="noreferrer"
-              className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-medium"
-            >
-              <Github size={18} />
-            </a>
           </div>
         </div>
       </header>
@@ -154,12 +184,12 @@ const App: React.FC = () => {
           
           {/* Settings Panel */}
           {showSettings && (
-            <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 animate-slideDown">
+            <div className="mb-8 bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 animate-slideDown">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-slate-800 flex items-center">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
                   <Settings size={18} className="mr-2" /> Application Settings
                 </h3>
-                <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600">
+                <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                   <X size={20} />
                 </button>
               </div>
@@ -167,15 +197,15 @@ const App: React.FC = () => {
                 
                 {/* Connection Config */}
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-slate-700">Middleware URL</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Middleware URL</label>
                   <input 
                     type="text" 
                     value={endpointUrl}
                     onChange={(e) => setEndpointUrl(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-100 focus:border-red-500"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-lg focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900 focus:border-red-500"
                     placeholder="e.g. /search"
                   />
-                  <div className="text-xs text-slate-500 space-y-1">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
                     <p>Production (Render): <code>/search</code></p>
                     <p>Local Dev: <code>http://localhost:3000/search</code></p>
                   </div>
@@ -183,7 +213,7 @@ const App: React.FC = () => {
 
                 {/* Platform Config */}
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-slate-700 flex items-center">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center">
                     <Layout size={16} className="mr-2" />
                     Open Links In
                   </label>
@@ -191,7 +221,7 @@ const App: React.FC = () => {
                     <select
                       value={platform}
                       onChange={(e) => handlePlatformChange(e.target.value as HivePlatform)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-100 focus:border-red-500 appearance-none bg-white"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-white rounded-lg focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900 focus:border-red-500 appearance-none"
                     >
                       <option value="peakd">PeakD.com</option>
                       <option value="ecency">Ecency.com</option>
@@ -201,7 +231,7 @@ const App: React.FC = () => {
                       <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                     </div>
                   </div>
-                   <p className="text-xs text-slate-500">
+                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Choose your preferred Hive interface for viewing posts.
                   </p>
                 </div>
@@ -210,7 +240,7 @@ const App: React.FC = () => {
               <div className="mt-6 flex justify-end">
                 <button 
                   onClick={() => setShowSettings(false)}
-                  className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors flex items-center text-sm font-medium"
+                  className="px-4 py-2 bg-slate-900 dark:bg-slate-800 text-white rounded-lg hover:bg-slate-800 dark:hover:bg-slate-700 transition-colors flex items-center text-sm font-medium"
                 >
                   <Save size={16} className="mr-2" /> Save & Close
                 </button>
@@ -228,13 +258,13 @@ const App: React.FC = () => {
           {/* Status & Results */}
           <div className="space-y-6">
             {status === FetchStatus.ERROR && (
-              <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-700 text-sm flex items-start">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 rounded-xl text-red-700 dark:text-red-400 text-sm flex items-start">
                 <AlertTriangle size={18} className="mr-2 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-semibold">Connection Error</p>
                   <p>{errorMsg}</p>
                   {errorMsg.includes("Failed to fetch") && (
-                     <p className="mt-2 text-xs bg-white/50 p-2 rounded">
+                     <p className="mt-2 text-xs bg-white/50 dark:bg-black/20 p-2 rounded">
                         <strong>Troubleshooting:</strong><br/>
                         1. Is the backend server running?<br/>
                         2. If local, try changing Middleware URL to <code>http://localhost:3000/search</code> in settings.
@@ -246,10 +276,10 @@ const App: React.FC = () => {
 
             {status === FetchStatus.SUCCESS && (
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-800">
-                  Search Results <span className="text-slate-400 font-normal">({posts.length})</span>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
+                  Search Results <span className="text-slate-400 dark:text-slate-500 font-normal">({posts.length})</span>
                 </h3>
-                <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
                   Opening in {PLATFORMS[platform].replace('https://', '')}
                 </span>
               </div>
@@ -269,19 +299,19 @@ const App: React.FC = () => {
 
             {/* Empty States */}
             {status === FetchStatus.SUCCESS && posts.length === 0 && (
-              <div className="text-center py-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                <Search size={48} className="mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-500 font-medium">No posts found matching your keywords in the last {SEARCH_DAYS} days.</p>
+              <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+                <Search size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+                <p className="text-slate-500 dark:text-slate-400 font-medium">No posts found matching your keywords in the last {SEARCH_DAYS} days.</p>
               </div>
             )}
 
             {status === FetchStatus.IDLE && (
               <div className="text-center py-20">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4 text-slate-400">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 mb-4 text-slate-400 dark:text-slate-500">
                   <Database size={32} />
                 </div>
-                <h3 className="text-lg font-medium text-slate-700 mb-2">Ready to Search</h3>
-                <p className="text-slate-500 max-w-md mx-auto">
+                <h3 className="text-lg font-medium text-slate-700 dark:text-slate-200 mb-2">Ready to Search</h3>
+                <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
                   Add keywords above to scan the Hive blockchain for relevant posts from the last {SEARCH_DAYS} days.
                 </p>
               </div>
@@ -291,7 +321,7 @@ const App: React.FC = () => {
 
         {/* Debug Console - Moved to Bottom */}
         {showDebug && (debugQuery || debugLog) && (
-            <div className="mt-12 bg-slate-900 rounded-xl overflow-hidden shadow-lg border border-slate-800">
+            <div className="mt-12 bg-slate-900 dark:bg-black rounded-xl overflow-hidden shadow-lg border border-slate-800">
               <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
                 <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">Debug Information</span>
                 {debugQuery && (
@@ -321,6 +351,37 @@ const App: React.FC = () => {
             </div>
           )}
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-8 mt-12 transition-colors duration-200">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-500 dark:text-slate-400">Created with</span>
+            <Heart size={14} className="text-red-500 fill-red-500 animate-pulse" />
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              by <a href="https://peakd.com/@louis88" target="_blank" rel="noreferrer" className="text-slate-900 dark:text-white font-semibold hover:text-red-600 dark:hover:text-red-500 transition-colors">@louis88</a>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a 
+              href="https://peakd.com/me/witnesses" 
+              target="_blank" 
+              rel="noreferrer" 
+              className="group flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/30 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800 transition-all"
+            >
+              <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 group-hover:bg-red-100 dark:group-hover:bg-red-800 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:text-red-600 dark:group-hover:text-red-300 transition-colors">
+                 <Vote size={14} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 leading-none mb-0.5">Witness</span>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-red-700 dark:group-hover:text-red-400 leading-none">Vote louis.witness</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
