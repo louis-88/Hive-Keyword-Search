@@ -1,5 +1,5 @@
 
-export const DEFAULT_ENDPOINT = "/search"; 
+export const DEFAULT_ENDPOINT = "http://localhost:3000/search"; 
 export const MAX_KEYWORDS = 10;
 export const SEARCH_DAYS = 3;
 
