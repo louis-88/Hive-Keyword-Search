@@ -91,9 +91,9 @@ const App: React.FC = () => {
       // Detailed Help Message
       if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
          setDebugLog(prev => prev + `\n\nCRITICAL CONNECTION ERROR:`);
-         setDebugLog(prev => prev + `\n1. Ensure 'node server.js' is running in a separate terminal.`);
-         setDebugLog(prev => prev + `\n2. It should be running on http://localhost:3000`);
-         setDebugLog(prev => prev + `\n3. Check Settings > Middleware URL matches that address.`);
+         setDebugLog(prev => prev + `\n1. Ensure the backend server is running.`);
+         setDebugLog(prev => prev + `\n2. Check if the Middleware URL in settings is correct.`);
+         setDebugLog(prev => prev + `\n3. If local, ensure 'node server.js' is active.`);
       }
       
       setStatus(FetchStatus.ERROR);
@@ -173,10 +173,10 @@ const App: React.FC = () => {
                     value={endpointUrl}
                     onChange={(e) => setEndpointUrl(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-100 focus:border-red-500"
-                    placeholder="e.g. http://localhost:3000/search"
+                    placeholder="e.g. /search"
                   />
                   <p className="text-xs text-slate-500">
-                    Address of your local <code>node server.js</code> instance.
+                    Relative path (e.g., <code>/search</code>) for production, or full URL for local dev.
                   </p>
                 </div>
 
@@ -235,8 +235,8 @@ const App: React.FC = () => {
                   {errorMsg.includes("Failed to fetch") && (
                      <p className="mt-2 text-xs bg-white/50 p-2 rounded">
                         <strong>Troubleshooting:</strong><br/>
-                        1. Is <code>node server.js</code> running? (Check Terminal 1)<br/>
-                        2. Is Middleware URL set to <code>http://localhost:3000/search</code>?
+                        1. Is the backend server running?<br/>
+                        2. If running locally, check <code>node server.js</code> console.
                      </p>
                   )}
                 </div>

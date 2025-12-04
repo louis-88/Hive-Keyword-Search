@@ -1,10 +1,18 @@
 import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Helper to fix __dirname in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const { Pool } = pg;
 const app = express();
-const port = 3000;
+
+// Use the PORT environment variable if available (Render), otherwise 3000
+const PORT = process.env.PORT || 3000;
 
 // Configuration for the Mahdiyari HAF SQL Node
 const dbConfig = {
@@ -21,7 +29,7 @@ const dbConfig = {
 
 const pool = new Pool(dbConfig);
 
-// Enable CORS for ALL origins to avoid "Failed to fetch" during local dev
+// Enable CORS for ALL origins
 app.use(cors({
     origin: '*', 
     methods: ['GET', 'POST', 'OPTIONS'],
@@ -36,25 +44,19 @@ app.use((req, res, next) => {
     next();
 });
 
-// Health check endpoint
-app.get('/', (req, res) => {
-    res.send(`
-        <h1>HAF Middleware Server is Running</h1>
-        <p>This is the API Backend.</p>
-        <p>Please open your <strong>Frontend URL</strong> (usually http://localhost:5173) to use the app.</p>
-    `);
-});
+// Serve static files from the React build directory (dist)
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // Check connection on startup
 pool.query('SELECT 1', (err, res) => {
     if (err) {
         console.error('⚠️ Warning: Error connecting to HAF SQL database:', err.message);
-        console.error('   (Check your internet connection or if the host is reachable)');
     } else {
         console.log('✅ Successfully connected to HAF SQL database.');
     }
 });
 
+// API Routes
 app.post('/search', async (req, res) => {
     const { keywords, days } = req.body;
 
@@ -116,7 +118,12 @@ app.post('/search', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`\n🚀 Backend Server running at http://localhost:${port}`);
-    console.log(`👉 Please start your frontend (npm run dev) and open that URL.`);
+// Catch-all route for SPA (React): Serves index.html for any unknown route
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+app.listen(PORT, () => {
+    console.log(`\n🚀 Backend Server running on port ${PORT}`);
+    console.log(`👉 If running locally: http://localhost:${PORT}`);
 });
