@@ -1,12 +1,15 @@
 # 🐝 Hive Keyword Tracker
 
-A powerful, real-time search tool for the [Hive Blockchain](https://hive.io). This application allows users to monitor specific keywords across all Hive posts created in the last 3 days using a direct SQL connection to a HAF (Hive Application Framework) node.
+A powerful, real-time search tool for the [Hive Blockchain](https://hive.io). This application allows users to monitor specific keywords across Hive posts using a direct SQL connection to a HAF (Hive Application Framework) node.
 
 ## ✨ Features
 
 - **Real-time HAF SQL**: Queries the blockchain state directly for instant results.
 - **Smart Keyword Monitoring**: Track up to 10 keywords simultaneously.
-- **Time Window**: Automatically scans the last 72 hours (3 days) of blockchain activity.
+- **Customizable Time Range**: Scan blockchain activity for the last **3, 5, 7, 30 days**, or even the **last year**.
+- **Advanced Results Management**:
+  - **Pagination**: Easily navigate through large sets of search results.
+  - **Instant Filtering**: Filter loaded results by Title, Author, or Content text in real-time.
 - **Rich Post Previews**:
   - Extracts and displays the first image from Markdown or HTML.
   - Highlights keyword context in snippets.
@@ -23,7 +26,7 @@ A powerful, real-time search tool for the [Hive Blockchain](https://hive.io). Th
 
 Since web browsers cannot connect directly to PostgreSQL databases (due to security protocols), this project uses a lightweight **Node.js Middleware** architecture:
 
-1.  **Frontend (React + Vite)**: User interface and settings.
+1.  **Frontend (React + Vite)**: User interface, settings, and result visualization.
 2.  **Middleware (Express)**: Receives requests from the frontend, securely connects to the HAF SQL database, and returns sanitized JSON data.
 3.  **Database (HAF SQL)**: The public Hive Application Framework node (provided by Mahdiyari).
 
