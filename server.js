@@ -105,7 +105,7 @@ app.post('/search', async (req, res) => {
             AND (${keywordConditions}) 
         ORDER BY 
             created DESC 
-        LIMIT 50;
+        LIMIT 500;
     `;
 
     try {

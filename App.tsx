@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Database, Search, AlertTriangle, Terminal, Copy, Check, Settings, X, Save, Layout, Moon, Sun, Heart, Vote } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Database, Search, AlertTriangle, Terminal, Copy, Check, Settings, X, Save, Layout, Moon, Sun, Heart, Vote, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ConnectionSettings, FetchStatus, HivePost, HivePlatform } from './types';
 import { fetchPostsByKeywords } from './services/hafService';
 import { DEFAULT_ENDPOINT, SEARCH_DAYS, PLATFORMS } from './constants';
 import KeywordManager from './components/KeywordManager';
 import PostCard from './components/PostCard';
+
+const ITEMS_PER_PAGE = 9;
 
 const App: React.FC = () => {
   // State initialization with localStorage checks
@@ -14,6 +16,10 @@ const App: React.FC = () => {
   const [posts, setPosts] = useState<HivePost[]>([]);
   const [status, setStatus] = useState<FetchStatus>(FetchStatus.IDLE);
   const [errorMsg, setErrorMsg] = useState<string>('');
+  
+  // Filtering & Pagination State
+  const [filterTerm, setFilterTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Settings State
   const [showSettings, setShowSettings] = useState(false);
@@ -102,6 +108,10 @@ const App: React.FC = () => {
     setErrorMsg('');
     setDebugLog('Initializing search...');
     setDebugQuery('Waiting for server to generate SQL...');
+    
+    // Reset filter and pagination on new search
+    setFilterTerm('');
+    setCurrentPage(1);
 
     try {
       setDebugLog(prev => prev + `\nTarget Endpoint: ${connection.endpointUrl}`);
@@ -136,6 +146,31 @@ const App: React.FC = () => {
     navigator.clipboard.writeText(debugQuery);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // --- Filtering & Pagination Logic ---
+  const filteredPosts = useMemo(() => {
+    if (!filterTerm) return posts;
+    const term = filterTerm.toLowerCase();
+    return posts.filter(post => 
+      post.title.toLowerCase().includes(term) ||
+      post.author.toLowerCase().includes(term) ||
+      post.body.toLowerCase().includes(term)
+    );
+  }, [posts, filterTerm]);
+
+  const totalPages = Math.ceil(filteredPosts.length / ITEMS_PER_PAGE);
+  
+  const paginatedPosts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredPosts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredPosts, currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   return (
@@ -279,33 +314,93 @@ const App: React.FC = () => {
             )}
 
             {status === FetchStatus.SUCCESS && (
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
-                  Search Results <span className="text-slate-400 dark:text-slate-500 font-normal">({posts.length})</span>
-                </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                  Opening in {PLATFORMS[platform].replace('https://', '')}
-                </span>
-              </div>
-            )}
+              <>
+                {/* Result Header & Filter */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
+                      Search Results <span className="text-slate-400 dark:text-slate-500 font-normal">({filteredPosts.length}{filteredPosts.length !== posts.length ? ` of ${posts.length}` : ''})</span>
+                    </h3>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                      Opening in {PLATFORMS[platform].replace('https://', '')}
+                    </span>
+                  </div>
 
-            {/* Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {posts.map((post) => (
-                <PostCard 
-                  key={`${post.author}-${post.permlink}`} 
-                  post={post} 
-                  keywords={keywords}
-                  platformUrl={PLATFORMS[platform]}
-                />
-              ))}
-            </div>
+                  {/* Filter Input */}
+                  {posts.length > 0 && (
+                    <div className="relative w-full sm:w-64">
+                      <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                      <input 
+                        type="text" 
+                        placeholder="Filter results..." 
+                        value={filterTerm}
+                        onChange={(e) => {
+                          setFilterTerm(e.target.value);
+                          setCurrentPage(1); // Reset to page 1 on filter change
+                        }}
+                        className="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900 transition-all text-slate-900 dark:text-white placeholder:text-slate-400"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {paginatedPosts.map((post) => (
+                    <PostCard 
+                      key={`${post.author}-${post.permlink}`} 
+                      post={post} 
+                      keywords={keywords}
+                      platformUrl={PLATFORMS[platform]}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-2 mt-8 py-4">
+                    <button 
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300 px-4">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    
+                    <button 
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
 
             {/* Empty States */}
             {status === FetchStatus.SUCCESS && posts.length === 0 && (
               <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
                 <Search size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                 <p className="text-slate-500 dark:text-slate-400 font-medium">No posts found matching your keywords {searchDays > 0 ? `in the last ${searchDays} days` : 'of all time'}.</p>
+              </div>
+            )}
+            
+            {status === FetchStatus.SUCCESS && posts.length > 0 && filteredPosts.length === 0 && (
+               <div className="text-center py-12 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+                <Filter size={32} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                <p className="text-slate-500 dark:text-slate-400 font-medium">No matches found for "{filterTerm}"</p>
+                <button 
+                  onClick={() => setFilterTerm('')}
+                  className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline"
+                >
+                  Clear filter
+                </button>
               </div>
             )}
 
