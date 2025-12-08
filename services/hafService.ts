@@ -15,6 +15,7 @@ interface SearchResponse {
  */
 export const fetchPostsByKeywords = async (
   keywords: string[],
+  days: number,
   settings: ConnectionSettings
 ): Promise<{ posts: HivePost[], debugSql: string }> => {
   
@@ -35,7 +36,7 @@ export const fetchPostsByKeywords = async (
       mode: 'cors',
       body: JSON.stringify({
         keywords: keywords,
-        days: 3
+        days: days
       })
     });
 

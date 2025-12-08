@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
-import { Plus, X, AlertCircle } from 'lucide-react';
+import { Plus, X, AlertCircle, ChevronDown } from 'lucide-react';
 import { MAX_KEYWORDS } from '../constants';
 
 interface KeywordManagerProps {
   keywords: string[];
   setKeywords: (keywords: string[]) => void;
+  searchDays: number;
+  setSearchDays: (days: number) => void;
   onSearch: () => void;
   isLoading: boolean;
 }
 
-const KeywordManager: React.FC<KeywordManagerProps> = ({ keywords, setKeywords, onSearch, isLoading }) => {
+const KeywordManager: React.FC<KeywordManagerProps> = ({ 
+  keywords, 
+  setKeywords, 
+  searchDays,
+  setSearchDays,
+  onSearch, 
+  isLoading 
+}) => {
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -48,12 +57,29 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({ keywords, setKeywords, 
 
   return (
     <div className="w-full bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 mb-8 transition-colors duration-200">
-      <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 flex items-center">
-        Search Parameters
-        <span className="ml-3 text-xs font-normal text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full border border-slate-200 dark:border-slate-700">
-          Last 3 Days
-        </span>
-      </h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
+          Search Parameters
+        </h2>
+        
+        {/* Time Range Selector */}
+        <div className="relative">
+          <select 
+            value={searchDays} 
+            onChange={(e) => setSearchDays(Number(e.target.value))}
+            className="appearance-none pl-3 pr-8 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900 transition-colors cursor-pointer"
+            disabled={isLoading}
+          >
+            <option value={3}>Last 3 Days</option>
+            <option value={5}>Last 5 Days</option>
+            <option value={7}>Last 7 Days</option>
+            <option value={30}>Last 30 Days</option>
+            <option value={365}>Last Year</option>
+            <option value={0}>All Time</option>
+          </select>
+          <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        </div>
+      </div>
       
       <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div className="flex-grow relative">

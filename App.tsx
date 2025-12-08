@@ -9,6 +9,7 @@ import PostCard from './components/PostCard';
 const App: React.FC = () => {
   // State initialization with localStorage checks
   const [keywords, setKeywords] = useState<string[]>([]);
+  const [searchDays, setSearchDays] = useState<number>(3);
   
   const [posts, setPosts] = useState<HivePost[]>([]);
   const [status, setStatus] = useState<FetchStatus>(FetchStatus.IDLE);
@@ -104,9 +105,10 @@ const App: React.FC = () => {
 
     try {
       setDebugLog(prev => prev + `\nTarget Endpoint: ${connection.endpointUrl}`);
+      setDebugLog(prev => prev + `\nTime Range: ${searchDays === 0 ? 'All Time' : searchDays + ' days'}`);
       setDebugLog(prev => prev + `\nSending request...`);
       
-      const { posts: results, debugSql } = await fetchPostsByKeywords(keywords, connection);
+      const { posts: results, debugSql } = await fetchPostsByKeywords(keywords, searchDays, connection);
       
       setDebugQuery(debugSql);
       setDebugLog(prev => prev + `\nSuccess! Received ${results.length} records.`);
@@ -251,6 +253,8 @@ const App: React.FC = () => {
           <KeywordManager 
             keywords={keywords}
             setKeywords={setKeywords}
+            searchDays={searchDays}
+            setSearchDays={setSearchDays}
             onSearch={handleSearch}
             isLoading={status === FetchStatus.LOADING}
           />
@@ -301,7 +305,7 @@ const App: React.FC = () => {
             {status === FetchStatus.SUCCESS && posts.length === 0 && (
               <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
                 <Search size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-                <p className="text-slate-500 dark:text-slate-400 font-medium">No posts found matching your keywords in the last {SEARCH_DAYS} days.</p>
+                <p className="text-slate-500 dark:text-slate-400 font-medium">No posts found matching your keywords {searchDays > 0 ? `in the last ${searchDays} days` : 'of all time'}.</p>
               </div>
             )}
 
@@ -312,7 +316,7 @@ const App: React.FC = () => {
                 </div>
                 <h3 className="text-lg font-medium text-slate-700 dark:text-slate-200 mb-2">Ready to Search</h3>
                 <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                  Add keywords above to scan the Hive blockchain for relevant posts from the last {SEARCH_DAYS} days.
+                  Add keywords above to scan the Hive blockchain for relevant posts.
                 </p>
               </div>
             )}
