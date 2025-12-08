@@ -22,7 +22,7 @@ const dbConfig = {
     database: 'haf_block_log',
     user: 'hafsql_public',
     password: 'hafsql_public',
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 30000, // Increased timeout for larger result sets
     idleTimeoutMillis: 30000,
     // SSL is explicitly disabled as the server does not support it
     ssl: false
@@ -68,16 +68,11 @@ app.post('/search', async (req, res) => {
         return res.status(400).json({ error: 'Keywords array is required' });
     }
 
-    // If days is provided and > 0, we restrict by date. If 0 or null, we assume 'All Time'.
-    // Default to 3 days if undefined, unless strictly passed as 0.
-    const searchDays = (days === undefined) ? 3 : Number(days);
+    // Force strict day limit. If 0 (All Time) or invalid is passed, default to 3 days.
+    // "All Time" is disabled to prevent timeouts.
+    const searchDays = (!days || Number(days) <= 0) ? 3 : Number(days);
     
-    let dateCondition = '';
-    
-    if (searchDays > 0) {
-        dateCondition = `AND created > NOW() - INTERVAL '${searchDays} days'`;
-    } 
-    // If searchDays is 0 (All Time), dateCondition remains empty string.
+    const dateCondition = `AND created > NOW() - INTERVAL '${searchDays} days'`;
 
     // Sanitize keywords for SQL usage
     const sanitizedKeywords = keywords.map(k => k.replace(/'/g, "''"));
@@ -89,6 +84,7 @@ app.post('/search', async (req, res) => {
 
     // Query hafsql.comments
     // We select the FULL body now so the frontend can extract images correctly.
+    // LIMIT removed to fetch all results as requested.
     const query = `
         SELECT 
             author, 
@@ -104,12 +100,11 @@ app.post('/search', async (req, res) => {
             ${dateCondition}
             AND (${keywordConditions}) 
         ORDER BY 
-            created DESC 
-        LIMIT 500;
+            created DESC;
     `;
 
     try {
-        console.log(`🔎 Executing search for: ${keywords.join(', ')} (${searchDays === 0 ? 'All Time' : searchDays + ' days'})`);
+        console.log(`🔎 Executing search for: ${keywords.join(', ')} (${searchDays} days)`);
         const result = await pool.query(query);
         console.log(`✅ Found ${result.rowCount} posts.`);
         

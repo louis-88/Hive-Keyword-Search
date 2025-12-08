@@ -75,7 +75,6 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
             <option value={7}>Last 7 Days</option>
             <option value={30}>Last 30 Days</option>
             <option value={365}>Last Year</option>
-            <option value={0}>All Time</option>
           </select>
           <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         </div>

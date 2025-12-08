@@ -115,7 +115,7 @@ const App: React.FC = () => {
 
     try {
       setDebugLog(prev => prev + `\nTarget Endpoint: ${connection.endpointUrl}`);
-      setDebugLog(prev => prev + `\nTime Range: ${searchDays === 0 ? 'All Time' : searchDays + ' days'}`);
+      setDebugLog(prev => prev + `\nTime Range: ${searchDays} days`);
       setDebugLog(prev => prev + `\nSending request...`);
       
       const { posts: results, debugSql } = await fetchPostsByKeywords(keywords, searchDays, connection);
@@ -387,7 +387,7 @@ const App: React.FC = () => {
             {status === FetchStatus.SUCCESS && posts.length === 0 && (
               <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
                 <Search size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-                <p className="text-slate-500 dark:text-slate-400 font-medium">No posts found matching your keywords {searchDays > 0 ? `in the last ${searchDays} days` : 'of all time'}.</p>
+                <p className="text-slate-500 dark:text-slate-400 font-medium">No posts found matching your keywords in the last {searchDays} days.</p>
               </div>
             )}
             
