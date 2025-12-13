@@ -122,7 +122,7 @@ const App: React.FC = () => {
     setPosts([]);
     setErrorMsg('');
     setDebugLog('Initializing search...');
-    setDebugQuery('Waiting for server to generate SQL...');
+    setDebugQuery('');
     
     // Reset filter and pagination on new search
     setFilterTerm('');
@@ -131,12 +131,6 @@ const App: React.FC = () => {
     try {
       setDebugLog(prev => prev + `\nTarget Endpoint: ${connection.endpointUrl}`);
       
-      if (timeRange === 'custom') {
-         setDebugLog(prev => prev + `\nTime Mode: Custom Range (${customDateRange.start} to ${customDateRange.end})`);
-      } else {
-         setDebugLog(prev => prev + `\nTime Mode: Relative (Last ${timeRange} days)`);
-      }
-      
       const authorToSearch = searchScope === 'user' && targetAuthor.trim() ? targetAuthor.trim() : null;
       if (authorToSearch) {
         setDebugLog(prev => prev + `\nScope: Specific User (@${authorToSearch})`);
@@ -144,25 +138,108 @@ const App: React.FC = () => {
         setDebugLog(prev => prev + `\nScope: Entire Blockchain`);
       }
 
-      setDebugLog(prev => prev + `\nSending request...`);
+      // 1. Calculate Date Range details
+      let start: Date;
+      let end: Date = new Date(); // Today
       
-      const { posts: results, debugSql } = await fetchPostsByKeywords(
-        keywords, 
-        timeRange, 
-        customDateRange,
-        authorToSearch, 
-        connection
-      );
+      if (timeRange === 'custom') {
+          start = new Date(customDateRange.start);
+          end = new Date(customDateRange.end);
+      } else {
+          const days = Number(timeRange);
+          start = new Date();
+          start.setDate(end.getDate() - days);
+      }
+
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      setDebugLog(prev => prev + `\nTime Range: ${diffDays} days`);
+
+      // 2. Prepare Chunks if needed (Threshold: 90 days)
+      const CHUNK_THRESHOLD = 90;
+      let chunks: {start: string, end: string}[] = [];
+
+      if (diffDays > CHUNK_THRESHOLD) {
+        setDebugLog(prev => prev + `\nLarge search detected (> ${CHUNK_THRESHOLD} days). Chunking requests...`);
+        
+        let currEnd = new Date(end);
+        const finalStart = new Date(start);
+        
+        // Loop backwards from End to Start in 30 day increments
+        while (currEnd > finalStart) {
+           let currStart = new Date(currEnd);
+           currStart.setDate(currEnd.getDate() - 30);
+           
+           if (currStart < finalStart) {
+               currStart = new Date(finalStart);
+           }
+
+           chunks.push({
+               start: currStart.toISOString().split('T')[0],
+               end: currEnd.toISOString().split('T')[0]
+           });
+
+           // Move currEnd back by 1 day for next iteration to avoid overlap
+           currEnd = new Date(currStart);
+           currEnd.setDate(currEnd.getDate() - 1);
+        }
+      } else {
+        // Single chunk using the calculated dates (ensures formatting consistency)
+        chunks.push({
+            start: start.toISOString().split('T')[0],
+            end: end.toISOString().split('T')[0]
+        });
+      }
+
+      // 3. Execute Chunks
+      let allPosts: HivePost[] = [];
+      let accumulatedSql = '';
+
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        if (chunks.length > 1) {
+            setDebugLog(prev => prev + `\nFetching chunk ${i+1}/${chunks.length}: ${chunk.start} to ${chunk.end}...`);
+        } else {
+            setDebugLog(prev => prev + `\nSending request...`);
+        }
+
+        // We use 'custom' mode here to enforce the specific chunk dates
+        const { posts: chunkPosts, debugSql } = await fetchPostsByKeywords(
+            keywords, 
+            'custom', 
+            { start: chunk.start, end: chunk.end },
+            authorToSearch, 
+            connection
+        );
+
+        accumulatedSql += chunks.length > 1 
+            ? `-- CHUNK ${i+1} (${chunk.start} to ${chunk.end})\n${debugSql}\n\n`
+            : `${debugSql}`;
+            
+        setDebugQuery(accumulatedSql); // Update debug view immediately
+        
+        allPosts = [...allPosts, ...chunkPosts];
+      }
       
-      setDebugQuery(debugSql);
-      setDebugLog(prev => prev + `\nSuccess! Received ${results.length} records.`);
-      setPosts(results);
+      setDebugLog(prev => prev + `\nSuccess! Total records: ${allPosts.length}.`);
+
+      // 4. Deduplicate & Sort
+      const uniquePosts = Array.from(new Map(allPosts.map(item => [item.author + item.permlink, item])).values());
+      uniquePosts.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+
+      setPosts(uniquePosts);
       setStatus(FetchStatus.SUCCESS);
     } catch (err: any) {
       console.error(err);
       const msg = err.message || "Failed to fetch posts.";
       setErrorMsg(msg);
       setDebugLog(prev => prev + `\nERROR: ${msg}`);
+      
+      // If we have SQL from the error, append it
+      if (err.debugSql) {
+          setDebugQuery(prev => prev + `\n\n-- FAILED QUERY --\n${err.debugSql}`);
+      }
       
       // Detailed Help Message
       if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {

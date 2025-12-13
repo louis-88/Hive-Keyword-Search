@@ -55,14 +55,21 @@ export const fetchPostsByKeywords = async (
       body: JSON.stringify(body)
     });
 
-    const json: SearchResponse = await response.json().catch(() => ({ 
-        success: false, 
-        data: [], 
-        error: "Failed to parse JSON response from server" 
-    }));
+    let json: SearchResponse | null = null;
+    try {
+        json = await response.json();
+    } catch (e) {
+        // Failed to parse JSON (e.g. server timeout/crash returning HTML)
+    }
 
-    if (!response.ok || !json.success) {
-      throw new Error(json.error || `Server responded with status: ${response.status}`);
+    if (!response.ok || !json || !json.success) {
+      const errorMsg = json?.error || `Server responded with status: ${response.status}`;
+      const error: any = new Error(errorMsg);
+      // Attach debug SQL if available from server
+      if (json?.debug?.generatedSql) {
+          error.debugSql = json.debug.generatedSql;
+      }
+      throw error;
     }
 
     // Map the body_preview from server to body property for the UI
