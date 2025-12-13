@@ -62,7 +62,7 @@ pool.query('SELECT 1', (err, res) => {
 
 // API Routes
 app.post('/search', async (req, res) => {
-    const { keywords, days } = req.body;
+    const { keywords, days, author } = req.body;
 
     if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
         return res.status(400).json({ error: 'Keywords array is required' });
@@ -82,6 +82,16 @@ app.post('/search', async (req, res) => {
         .map(k => `(body ILIKE '%${k}%' OR title ILIKE '%${k}%')`)
         .join(' OR ');
 
+    // Author condition
+    let authorCondition = '';
+    if (author && typeof author === 'string' && author.trim().length > 0) {
+        // Basic sanitization: only allow alphanumeric, dot, and hyphen (Hive username rules)
+        const safeAuthor = author.trim().replace(/[^a-z0-9\.-]/g, '');
+        if (safeAuthor) {
+            authorCondition = `AND author = '${safeAuthor}'`;
+        }
+    }
+
     // Query hafsql.comments
     // We select the FULL body now so the frontend can extract images correctly.
     // LIMIT removed to fetch all results as requested.
@@ -98,13 +108,14 @@ app.post('/search', async (req, res) => {
         WHERE 
             parent_author = '' 
             ${dateCondition}
+            ${authorCondition}
             AND (${keywordConditions}) 
         ORDER BY 
             created DESC;
     `;
 
     try {
-        console.log(`🔎 Executing search for: ${keywords.join(', ')} (${searchDays} days)`);
+        console.log(`🔎 Executing search for: ${keywords.join(', ')} (${searchDays} days)${authorCondition ? ` [Author: ${author}]` : ''}`);
         const result = await pool.query(query);
         console.log(`✅ Found ${result.rowCount} posts.`);
         

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X, AlertCircle, ChevronDown } from 'lucide-react';
+import { Plus, X, AlertCircle, ChevronDown, Globe, User } from 'lucide-react';
 import { MAX_KEYWORDS } from '../constants';
 
 interface KeywordManagerProps {
@@ -9,6 +9,10 @@ interface KeywordManagerProps {
   setSearchDays: (days: number) => void;
   onSearch: () => void;
   isLoading: boolean;
+  searchScope: 'global' | 'user';
+  setSearchScope: (scope: 'global' | 'user') => void;
+  targetAuthor: string;
+  setTargetAuthor: (author: string) => void;
 }
 
 const KeywordManager: React.FC<KeywordManagerProps> = ({ 
@@ -17,7 +21,11 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
   searchDays,
   setSearchDays,
   onSearch, 
-  isLoading 
+  isLoading,
+  searchScope,
+  setSearchScope,
+  targetAuthor,
+  setTargetAuthor
 }) => {
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +65,7 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
 
   return (
     <div className="w-full bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 mb-8 transition-colors duration-200">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h2 className="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
           Search Parameters
         </h2>
@@ -80,6 +88,53 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
         </div>
       </div>
       
+      {/* Search Scope Toggle */}
+      <div className="flex gap-2 mb-4 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg w-fit">
+        <button
+          onClick={() => setSearchScope('global')}
+          className={`flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+            searchScope === 'global'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <Globe size={14} className="mr-1.5" />
+          Entire Blockchain
+        </button>
+        <button
+          onClick={() => setSearchScope('user')}
+          className={`flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+            searchScope === 'user'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <User size={14} className="mr-1.5" />
+          Specific User
+        </button>
+      </div>
+
+      {/* Target Author Input (Conditional) */}
+      {searchScope === 'user' && (
+        <div className="mb-4 animate-fadeIn">
+          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 ml-1">
+            Search posts from user:
+          </label>
+          <div className="relative max-w-md">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">@</span>
+            <input
+              type="text"
+              value={targetAuthor}
+              onChange={(e) => setTargetAuthor(e.target.value)}
+              placeholder="username (e.g. louis88)"
+              className="w-full pl-7 pr-4 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900 focus:border-red-500 focus:outline-none transition-all"
+              disabled={isLoading}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Keywords Input */}
       <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div className="flex-grow relative">
           <input
@@ -90,7 +145,7 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
               setError(null);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Add a keyword (e.g., 'bitcoin', 'splinterlands')"
+            placeholder={`Add a keyword (Max ${MAX_KEYWORDS})`}
             className={`w-full h-12 px-4 rounded-xl border bg-white dark:bg-slate-950 text-slate-900 dark:text-white ${error ? 'border-red-300 focus:ring-red-200' : 'border-slate-300 dark:border-slate-700 focus:ring-red-100 dark:focus:ring-red-900 focus:border-red-500'} focus:ring-4 focus:outline-none transition-all placeholder:text-slate-400`}
             disabled={isLoading || keywords.length >= MAX_KEYWORDS}
           />
@@ -105,7 +160,7 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
         
         <button
           onClick={onSearch}
-          disabled={isLoading || keywords.length === 0}
+          disabled={isLoading || keywords.length === 0 || (searchScope === 'user' && !targetAuthor.trim())}
           className="h-12 px-8 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-600/20 active:scale-95 transition-all flex items-center justify-center min-w-[140px]"
         >
           {isLoading ? (

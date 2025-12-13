@@ -13,6 +13,10 @@ const App: React.FC = () => {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [searchDays, setSearchDays] = useState<number>(3);
   
+  // Search Scope State
+  const [searchScope, setSearchScope] = useState<'global' | 'user'>('global');
+  const [targetAuthor, setTargetAuthor] = useState<string>('');
+
   const [posts, setPosts] = useState<HivePost[]>([]);
   const [status, setStatus] = useState<FetchStatus>(FetchStatus.IDLE);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -116,9 +120,22 @@ const App: React.FC = () => {
     try {
       setDebugLog(prev => prev + `\nTarget Endpoint: ${connection.endpointUrl}`);
       setDebugLog(prev => prev + `\nTime Range: ${searchDays} days`);
+      
+      const authorToSearch = searchScope === 'user' && targetAuthor.trim() ? targetAuthor.trim() : null;
+      if (authorToSearch) {
+        setDebugLog(prev => prev + `\nScope: Specific User (@${authorToSearch})`);
+      } else {
+        setDebugLog(prev => prev + `\nScope: Entire Blockchain`);
+      }
+
       setDebugLog(prev => prev + `\nSending request...`);
       
-      const { posts: results, debugSql } = await fetchPostsByKeywords(keywords, searchDays, connection);
+      const { posts: results, debugSql } = await fetchPostsByKeywords(
+        keywords, 
+        searchDays, 
+        authorToSearch, 
+        connection
+      );
       
       setDebugQuery(debugSql);
       setDebugLog(prev => prev + `\nSuccess! Received ${results.length} records.`);
@@ -292,6 +309,10 @@ const App: React.FC = () => {
             setSearchDays={setSearchDays}
             onSearch={handleSearch}
             isLoading={status === FetchStatus.LOADING}
+            searchScope={searchScope}
+            setSearchScope={setSearchScope}
+            targetAuthor={targetAuthor}
+            setTargetAuthor={setTargetAuthor}
           />
 
           {/* Status & Results */}

@@ -6,7 +6,7 @@ const isLocal = typeof window !== 'undefined' &&
 // Use full URL for local dev (split ports) and relative URL for production (same port)
 export const DEFAULT_ENDPOINT = isLocal ? "http://localhost:3000/search" : "/search";
 
-export const MAX_KEYWORDS = 10;
+export const MAX_KEYWORDS = 3;
 export const SEARCH_DAYS = 3;
 
 // Mock posts removed as we are focusing on live data
