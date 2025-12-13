@@ -8,6 +8,7 @@ export const DEFAULT_ENDPOINT = isLocal ? "http://localhost:3000/search" : "/sea
 
 export const MAX_KEYWORDS = 3;
 export const SEARCH_DAYS = 3;
+export const HIVE_GENESIS_DATE = '2020-03-20';
 
 // Mock posts removed as we are focusing on live data
 export const MOCK_POSTS = [];

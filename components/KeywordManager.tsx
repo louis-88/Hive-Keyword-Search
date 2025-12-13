@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Plus, X, AlertCircle, ChevronDown, Globe, User } from 'lucide-react';
-import { MAX_KEYWORDS } from '../constants';
+import { Plus, X, AlertCircle, ChevronDown, Globe, User, CalendarDays } from 'lucide-react';
+import { MAX_KEYWORDS, HIVE_GENESIS_DATE } from '../constants';
 
 interface KeywordManagerProps {
   keywords: string[];
   setKeywords: (keywords: string[]) => void;
-  searchDays: number;
-  setSearchDays: (days: number) => void;
+  timeRange: string;
+  setTimeRange: (range: string) => void;
+  customDateRange: { start: string; end: string };
+  setCustomDateRange: (range: { start: string; end: string }) => void;
   onSearch: () => void;
   isLoading: boolean;
   searchScope: 'global' | 'user';
@@ -18,8 +20,10 @@ interface KeywordManagerProps {
 const KeywordManager: React.FC<KeywordManagerProps> = ({ 
   keywords, 
   setKeywords, 
-  searchDays,
-  setSearchDays,
+  timeRange,
+  setTimeRange,
+  customDateRange,
+  setCustomDateRange,
   onSearch, 
   isLoading,
   searchScope,
@@ -63,28 +67,70 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
     }
   };
 
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <div className="w-full bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 mb-8 transition-colors duration-200">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-white flex items-center mt-1">
           Search Parameters
         </h2>
         
-        {/* Time Range Selector */}
-        <div className="relative">
-          <select 
-            value={searchDays} 
-            onChange={(e) => setSearchDays(Number(e.target.value))}
-            className="appearance-none pl-3 pr-8 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900 transition-colors cursor-pointer"
-            disabled={isLoading}
-          >
-            <option value={3}>Last 3 Days</option>
-            <option value={5}>Last 5 Days</option>
-            <option value={7}>Last 7 Days</option>
-            <option value={30}>Last 30 Days</option>
-            <option value={365}>Last Year</option>
-          </select>
-          <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        {/* Time Range Selector Block */}
+        <div className="flex flex-col gap-2">
+          <div className="relative">
+            <select 
+              value={timeRange} 
+              onChange={(e) => setTimeRange(e.target.value)}
+              className="w-full md:w-48 appearance-none pl-3 pr-8 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900 transition-colors cursor-pointer"
+              disabled={isLoading}
+            >
+              <optgroup label="Quick Select">
+                <option value="3">Last 3 Days</option>
+                <option value="5">Last 5 Days</option>
+                <option value="7">Last 7 Days</option>
+                <option value="30">Last 30 Days (1 Month)</option>
+                <option value="60">Last 60 Days (2 Months)</option>
+                <option value="90">Last 90 Days (3 Months)</option>
+                <option value="120">Last 120 Days (4 Months)</option>
+                <option value="150">Last 150 Days (5 Months)</option>
+                <option value="365">Last Year</option>
+              </optgroup>
+              <optgroup label="Advanced">
+                 <option value="custom">Custom Date Range</option>
+              </optgroup>
+            </select>
+            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          </div>
+
+          {/* Custom Date Inputs */}
+          {timeRange === 'custom' && (
+            <div className="flex items-center gap-2 animate-fadeIn bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+              <div className="flex flex-col">
+                <label className="text-[10px] text-slate-400 uppercase font-bold ml-1">From</label>
+                <input 
+                  type="date" 
+                  min={HIVE_GENESIS_DATE}
+                  max={today}
+                  value={customDateRange.start}
+                  onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
+                  className="px-2 py-1 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-slate-700 dark:text-slate-200 focus:outline-none focus:border-red-500"
+                />
+              </div>
+              <span className="text-slate-400 mt-4">-</span>
+              <div className="flex flex-col">
+                <label className="text-[10px] text-slate-400 uppercase font-bold ml-1">To</label>
+                <input 
+                  type="date"
+                  min={customDateRange.start || HIVE_GENESIS_DATE} 
+                  max={today}
+                  value={customDateRange.end}
+                  onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
+                  className="px-2 py-1 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-slate-700 dark:text-slate-200 focus:outline-none focus:border-red-500"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
       
@@ -160,7 +206,7 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
         
         <button
           onClick={onSearch}
-          disabled={isLoading || keywords.length === 0 || (searchScope === 'user' && !targetAuthor.trim())}
+          disabled={isLoading || keywords.length === 0 || (searchScope === 'user' && !targetAuthor.trim()) || (timeRange === 'custom' && (!customDateRange.start || !customDateRange.end))}
           className="h-12 px-8 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-600/20 active:scale-95 transition-all flex items-center justify-center min-w-[140px]"
         >
           {isLoading ? (

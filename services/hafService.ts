@@ -15,7 +15,8 @@ interface SearchResponse {
  */
 export const fetchPostsByKeywords = async (
   keywords: string[],
-  days: number,
+  timeRange: string,
+  customDateRange: { start: string, end: string },
   author: string | null,
   settings: ConnectionSettings
 ): Promise<{ posts: HivePost[], debugSql: string }> => {
@@ -27,6 +28,22 @@ export const fetchPostsByKeywords = async (
     throw new Error("No Endpoint configured.");
   }
 
+  // Construct request body
+  const body: any = {
+    keywords: keywords,
+    author: author
+  };
+
+  if (timeRange === 'custom') {
+    if (!customDateRange.start || !customDateRange.end) {
+        throw new Error("Start Date and End Date are required for custom range.");
+    }
+    body.startDate = customDateRange.start;
+    body.endDate = customDateRange.end;
+  } else {
+    body.days = Number(timeRange);
+  }
+
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -35,11 +52,7 @@ export const fetchPostsByKeywords = async (
       },
       // Explicitly request CORS mode, although it is the default
       mode: 'cors',
-      body: JSON.stringify({
-        keywords: keywords,
-        days: days,
-        author: author
-      })
+      body: JSON.stringify(body)
     });
 
     const json: SearchResponse = await response.json().catch(() => ({ 

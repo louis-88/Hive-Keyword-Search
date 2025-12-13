@@ -62,17 +62,32 @@ pool.query('SELECT 1', (err, res) => {
 
 // API Routes
 app.post('/search', async (req, res) => {
-    const { keywords, days, author } = req.body;
+    const { keywords, days, author, startDate, endDate } = req.body;
 
     if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
         return res.status(400).json({ error: 'Keywords array is required' });
     }
 
-    // Force strict day limit. If 0 (All Time) or invalid is passed, default to 3 days.
-    // "All Time" is disabled to prevent timeouts.
-    const searchDays = (!days || Number(days) <= 0) ? 3 : Number(days);
-    
-    const dateCondition = `AND created > NOW() - INTERVAL '${searchDays} days'`;
+    let dateCondition = '';
+    let logTimeInfo = '';
+
+    // Check if we are using a Custom Date Range
+    if (startDate && endDate) {
+        // Basic validation for YYYY-MM-DD format
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+            return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD.' });
+        }
+        // Set range from Start 00:00:00 to End 23:59:59
+        dateCondition = `AND created BETWEEN '${startDate}' AND '${endDate} 23:59:59'`;
+        logTimeInfo = `Range: ${startDate} to ${endDate}`;
+    } else {
+        // Default to "Last X Days" logic
+        // Force strict day limit. If 0 or invalid is passed, default to 3 days.
+        const searchDays = (!days || Number(days) <= 0) ? 3 : Number(days);
+        dateCondition = `AND created > NOW() - INTERVAL '${searchDays} days'`;
+        logTimeInfo = `Last ${searchDays} days`;
+    }
 
     // Sanitize keywords for SQL usage
     const sanitizedKeywords = keywords.map(k => k.replace(/'/g, "''"));
@@ -93,8 +108,6 @@ app.post('/search', async (req, res) => {
     }
 
     // Query hafsql.comments
-    // We select the FULL body now so the frontend can extract images correctly.
-    // LIMIT removed to fetch all results as requested.
     const query = `
         SELECT 
             author, 
@@ -115,7 +128,7 @@ app.post('/search', async (req, res) => {
     `;
 
     try {
-        console.log(`🔎 Executing search for: ${keywords.join(', ')} (${searchDays} days)${authorCondition ? ` [Author: ${author}]` : ''}`);
+        console.log(`🔎 Executing search for: ${keywords.join(', ')} [${logTimeInfo}]${authorCondition ? ` [Author: ${author}]` : ''}`);
         const result = await pool.query(query);
         console.log(`✅ Found ${result.rowCount} posts.`);
         

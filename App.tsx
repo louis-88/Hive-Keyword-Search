@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Database, Search, AlertTriangle, Terminal, Copy, Check, Settings, X, Save, Layout, Moon, Sun, Heart, Vote, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ConnectionSettings, FetchStatus, HivePost, HivePlatform } from './types';
 import { fetchPostsByKeywords } from './services/hafService';
-import { DEFAULT_ENDPOINT, SEARCH_DAYS, PLATFORMS } from './constants';
+import { DEFAULT_ENDPOINT, PLATFORMS } from './constants';
 import KeywordManager from './components/KeywordManager';
 import PostCard from './components/PostCard';
 
@@ -11,8 +11,11 @@ const ITEMS_PER_PAGE = 9;
 const App: React.FC = () => {
   // State initialization with localStorage checks
   const [keywords, setKeywords] = useState<string[]>([]);
-  const [searchDays, setSearchDays] = useState<number>(3);
   
+  // Time Range State (String to support 'custom')
+  const [timeRange, setTimeRange] = useState<string>("3");
+  const [customDateRange, setCustomDateRange] = useState<{start: string, end: string}>({start: '', end: ''});
+
   // Search Scope State
   const [searchScope, setSearchScope] = useState<'global' | 'user'>('global');
   const [targetAuthor, setTargetAuthor] = useState<string>('');
@@ -119,7 +122,12 @@ const App: React.FC = () => {
 
     try {
       setDebugLog(prev => prev + `\nTarget Endpoint: ${connection.endpointUrl}`);
-      setDebugLog(prev => prev + `\nTime Range: ${searchDays} days`);
+      
+      if (timeRange === 'custom') {
+         setDebugLog(prev => prev + `\nTime Mode: Custom Range (${customDateRange.start} to ${customDateRange.end})`);
+      } else {
+         setDebugLog(prev => prev + `\nTime Mode: Relative (Last ${timeRange} days)`);
+      }
       
       const authorToSearch = searchScope === 'user' && targetAuthor.trim() ? targetAuthor.trim() : null;
       if (authorToSearch) {
@@ -132,7 +140,8 @@ const App: React.FC = () => {
       
       const { posts: results, debugSql } = await fetchPostsByKeywords(
         keywords, 
-        searchDays, 
+        timeRange, 
+        customDateRange,
         authorToSearch, 
         connection
       );
@@ -305,8 +314,10 @@ const App: React.FC = () => {
           <KeywordManager 
             keywords={keywords}
             setKeywords={setKeywords}
-            searchDays={searchDays}
-            setSearchDays={setSearchDays}
+            timeRange={timeRange}
+            setTimeRange={setTimeRange}
+            customDateRange={customDateRange}
+            setCustomDateRange={setCustomDateRange}
             onSearch={handleSearch}
             isLoading={status === FetchStatus.LOADING}
             searchScope={searchScope}
@@ -408,7 +419,13 @@ const App: React.FC = () => {
             {status === FetchStatus.SUCCESS && posts.length === 0 && (
               <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
                 <Search size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-                <p className="text-slate-500 dark:text-slate-400 font-medium">No posts found matching your keywords in the last {searchDays} days.</p>
+                <p className="text-slate-500 dark:text-slate-400 font-medium">
+                  No posts found matching your keywords 
+                  {timeRange === 'custom' 
+                    ? ` between ${customDateRange.start} and ${customDateRange.end}.`
+                    : ` in the last ${timeRange} days.`
+                  }
+                </p>
               </div>
             )}
             
