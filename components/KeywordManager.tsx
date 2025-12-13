@@ -96,9 +96,11 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
                 <option value="150">Last 150 Days (5 Months)</option>
                 <option value="365">Last Year</option>
               </optgroup>
-              <optgroup label="Advanced">
-                 <option value="custom">Custom Date Range</option>
-              </optgroup>
+              {searchScope === 'user' && (
+                <optgroup label="Advanced">
+                   <option value="custom">Custom Date Range</option>
+                </optgroup>
+              )}
             </select>
             <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           </div>

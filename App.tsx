@@ -93,6 +93,14 @@ const App: React.FC = () => {
     }
   };
 
+  // Reset time range to default if switching to global while in custom mode
+  // This prevents the user from being stuck in "Custom" mode when switching to Global search
+  useEffect(() => {
+    if (searchScope === 'global' && timeRange === 'custom') {
+      setTimeRange("3");
+    }
+  }, [searchScope, timeRange]);
+
   // Save Platform to LocalStorage
   const handlePlatformChange = (newPlatform: HivePlatform) => {
     setPlatform(newPlatform);
