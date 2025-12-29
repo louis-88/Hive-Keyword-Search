@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Plus, X, AlertCircle, ChevronDown, Globe, User, CalendarDays } from 'lucide-react';
 import { MAX_KEYWORDS, HIVE_GENESIS_DATE } from '../constants';
@@ -76,7 +77,6 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
           Search Parameters
         </h2>
         
-        {/* Time Range Selector Block */}
         <div className="flex flex-col gap-2">
           <div className="relative">
             <select 
@@ -105,7 +105,6 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
             <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           </div>
 
-          {/* Custom Date Inputs */}
           {timeRange === 'custom' && (
             <div className="flex items-center gap-2 animate-fadeIn bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
               <div className="flex flex-col">
@@ -136,7 +135,6 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
         </div>
       </div>
       
-      {/* Search Scope Toggle */}
       <div className="flex gap-2 mb-4 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg w-fit">
         <button
           onClick={() => setSearchScope('global')}
@@ -162,7 +160,6 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
         </button>
       </div>
 
-      {/* Target Author Input (Conditional) */}
       {searchScope === 'user' && (
         <div className="mb-4 animate-fadeIn">
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 ml-1">
@@ -182,7 +179,6 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
         </div>
       )}
 
-      {/* Keywords Input */}
       <div className="flex flex-col md:flex-row gap-4 mb-4">
         <div className="flex-grow relative">
           <input
@@ -193,7 +189,7 @@ const KeywordManager: React.FC<KeywordManagerProps> = ({
               setError(null);
             }}
             onKeyDown={handleKeyDown}
-            placeholder={`Add a keyword (Max ${MAX_KEYWORDS})`}
+            placeholder={`Add a keyword (Up to ${MAX_KEYWORDS})`}
             className={`w-full h-12 px-4 rounded-xl border bg-white dark:bg-slate-950 text-slate-900 dark:text-white ${error ? 'border-red-300 focus:ring-red-200' : 'border-slate-300 dark:border-slate-700 focus:ring-red-100 dark:focus:ring-red-900 focus:border-red-500'} focus:ring-4 focus:outline-none transition-all placeholder:text-slate-400`}
             disabled={isLoading || keywords.length >= MAX_KEYWORDS}
           />
